@@ -2,12 +2,13 @@ import 'server-only'
 
 /**
  * Super-admin whitelist, read at runtime from the ADMIN_EMAILS env var
- * (comma-separated, case-insensitive). An empty or missing list denies everyone.
+ * (separated by commas, semicolons or whitespace; case-insensitive).
+ * An empty or missing list denies everyone.
  */
 function getAdminEmails(): Set<string> {
   return new Set(
     (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
+      .split(/[,;\s]+/)
       .map((email) => email.trim().toLowerCase())
       .filter(Boolean)
   )
