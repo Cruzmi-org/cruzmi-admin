@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { createSessionClient } from '@/lib/supabase/server'
 import { isAdminEmail } from '@/lib/auth/admins'
+import { relativeRedirect } from '@/lib/http'
 
 /**
  * OAuth (Google) return URL: exchanges the PKCE code for a session, then
@@ -9,26 +10,17 @@ import { isAdminEmail } from '@/lib/auth/admins'
  */
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
-  const loginUrl = new URL('/login', request.url)
-
-  if (!code) {
-    loginUrl.searchParams.set('error', 'oauth')
-    return NextResponse.redirect(loginUrl)
-  }
+  if (!code) return relativeRedirect('/login?error=oauth')
 
   const supabase = await createSessionClient()
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-  if (error || !data.user) {
-    loginUrl.searchParams.set('error', 'oauth')
-    return NextResponse.redirect(loginUrl)
-  }
+  if (error || !data.user) return relativeRedirect('/login?error=oauth')
 
   if (!isAdminEmail(data.user.email)) {
     await supabase.auth.signOut()
-    loginUrl.searchParams.set('error', 'forbidden')
-    return NextResponse.redirect(loginUrl)
+    return relativeRedirect('/login?error=forbidden')
   }
 
-  return NextResponse.redirect(new URL('/', request.url))
+  return relativeRedirect('/')
 }
