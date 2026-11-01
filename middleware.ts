@@ -38,9 +38,10 @@ export async function middleware(request: NextRequest) {
     // Supabase unreachable: treat as anonymous.
   }
 
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
+  const { pathname } = request.nextUrl
+  const isPublicPath = pathname.startsWith('/login') || pathname.startsWith('/auth/callback')
 
-  if (!isAuthenticated && !isLoginPage) {
+  if (!isAuthenticated && !isPublicPath) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

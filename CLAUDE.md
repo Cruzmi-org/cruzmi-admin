@@ -21,7 +21,7 @@ everything on purpose, so the security rules below are what protects the data.
 
 ## Security model (non-negotiable)
 
-1. **Authentication**: Supabase email + password, existing Cruzmi accounts.
+1. **Authentication**: Supabase, existing Cruzmi accounts — Google OAuth (PKCE, `/auth/callback`) or email + password.
 2. **Whitelist**: `ADMIN_EMAILS` env var (comma-separated), read at runtime in `lib/auth/admins.ts`.
 3. **Two locks**:
    - `middleware.ts` sends anonymous visitors to `/login`.

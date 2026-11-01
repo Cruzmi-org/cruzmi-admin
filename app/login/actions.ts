@@ -1,5 +1,6 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createSessionClient } from '@/lib/supabase/server'
 import { isAdminEmail } from '@/lib/auth/admins'
@@ -30,4 +31,22 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   }
 
   redirect('/')
+}
+
+/**
+ * Starts the Google OAuth flow (PKCE: the code verifier is stored in a cookie
+ * by the server client). The whitelist is checked on return, in /auth/callback.
+ */
+export async function signInWithGoogle(): Promise<void> {
+  const origin = (await headers()).get('origin')
+  if (!origin) redirect('/login?error=oauth')
+
+  const supabase = await createSessionClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${origin}/auth/callback` },
+  })
+
+  if (error || !data.url) redirect('/login?error=oauth')
+  redirect(data.url)
 }

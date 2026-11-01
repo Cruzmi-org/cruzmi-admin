@@ -12,7 +12,11 @@ export default async function LoginPage({
 }) {
   const { error } = await searchParams
   const initialError =
-    error === 'forbidden' ? "Ce compte n'a pas accès au back-office Cruzmi." : null
+    error === 'forbidden'
+      ? "Ce compte n'a pas accès au back-office Cruzmi."
+      : error === 'oauth'
+        ? 'La connexion avec Google a échoué. Réessayez.'
+        : null
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
