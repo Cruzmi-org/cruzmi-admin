@@ -1,5 +1,6 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { createSessionClient } from '@/lib/supabase/server'
+import { relativeRedirect } from '@/lib/http'
 
 /**
  * Signs the visitor out and returns to /login.
@@ -10,11 +11,8 @@ async function handle(request: NextRequest) {
   const supabase = await createSessionClient()
   await supabase.auth.signOut()
 
-  const target = new URL('/login', request.url)
-  if (request.nextUrl.searchParams.get('error') === 'forbidden') {
-    target.searchParams.set('error', 'forbidden')
-  }
-  return NextResponse.redirect(target, { status: 303 })
+  const forbidden = request.nextUrl.searchParams.get('error') === 'forbidden'
+  return relativeRedirect(forbidden ? '/login?error=forbidden' : '/login')
 }
 
 export const GET = handle
