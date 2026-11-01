@@ -1,76 +1,74 @@
-import { IconCircleCheck, IconAlertTriangle } from '@tabler/icons-react'
-import { requireAdmin } from '@/lib/auth/require-admin'
-import { getAdminDb } from '@/lib/supabase/admin'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
+import {
+  IconCalendarEvent,
+  IconBook,
+  IconBulb,
+  IconFolders,
+  IconPhoto,
+  IconReceipt,
+  IconUsers,
+  type Icon,
+} from '@tabler/icons-react'
+import { getOverview } from '@/lib/queries/overview'
+import { formatNumber } from '@/lib/format'
+import { PageHeader } from '@/components/page-header'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: "Vue d'ensemble · Cruzmi Admin" }
 
-const COUNTED_TABLES = [
-  { table: 'trips', label: 'Dossiers' },
-  { table: 'medias', label: 'Photos et médias' },
-  { table: 'expenses', label: 'Dépenses' },
-] as const
+const ICONS: Record<string, Icon> = {
+  accounts: IconUsers,
+  trips: IconFolders,
+  medias: IconPhoto,
+  expenses: IconReceipt,
+  suggestions: IconBulb,
+  activities: IconCalendarEvent,
+  albums: IconBook,
+}
 
-async function getSanityCounts() {
-  const db = await getAdminDb()
-
-  const [{ data: authData, error: authError }, ...tableResults] = await Promise.all([
-    db.auth.admin.listUsers({ page: 1, perPage: 1 }),
-    ...COUNTED_TABLES.map(({ table }) =>
-      db.from(table).select('*', { count: 'exact', head: true })
-    ),
-  ])
-
-  const counts = [
-    { label: 'Comptes', value: authError ? null : (authData as { total?: number }).total ?? null },
-    ...COUNTED_TABLES.map(({ label }, i) => ({
-      label,
-      value: tableResults[i].error ? null : tableResults[i].count,
-    })),
-  ]
-  const hasError = counts.some((c) => c.value === null)
-
-  return { counts, hasError }
+const LINKS: Record<string, string> = {
+  accounts: '/accounts',
+  trips: '/trips',
 }
 
 export default async function OverviewPage() {
-  const user = await requireAdmin()
-  const { counts, hasError } = await getSanityCounts()
+  const metrics = await getOverview()
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Bonjour 👋</h1>
-        <p className="text-muted-foreground">Connecté en tant que {user.email}</p>
-      </div>
+      <PageHeader title="Vue d'ensemble" description="Chiffres de toute la plateforme Cruzmi, en temps réel." />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {hasError ? (
-              <IconAlertTriangle className="h-5 w-5 text-destructive" />
-            ) : (
-              <IconCircleCheck className="h-5 w-5 text-green-600" />
-            )}
-            Connexion à la base
-          </CardTitle>
-          <CardDescription>
-            {hasError
-              ? "Certaines données n'ont pas pu être lues : vérifiez la clé service_role."
-              : 'Accès complet à la base opérationnel. Les tableaux détaillés arrivent au lot B.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {counts.map(({ label, value }) => (
-              <div key={label} className="rounded-lg border p-4">
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="text-2xl font-bold">{value ?? '—'}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => {
+          const MetricIcon = ICONS[metric.key] ?? IconFolders
+          const href = LINKS[metric.key]
+          const card = (
+            <Card className={href ? 'h-full transition-colors hover:border-primary' : 'h-full'}>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-base font-semibold text-muted-foreground">{metric.label}</CardTitle>
+                <MetricIcon className="h-5 w-5 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-4xl font-bold">{formatNumber(metric.total)}</p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">+{formatNumber(metric.last7)}</span> sur 7 jours ·{' '}
+                  <span className="font-semibold text-foreground">+{formatNumber(metric.last30)}</span> sur 30 jours
+                </p>
+                {metric.note && <p className="text-sm text-muted-foreground">{metric.note}</p>}
+              </CardContent>
+            </Card>
+          )
+
+          return href ? (
+            <Link key={metric.key} href={href} className="rounded-xl focus-visible:outline-2">
+              {card}
+            </Link>
+          ) : (
+            <div key={metric.key}>{card}</div>
+          )
+        })}
+      </div>
     </div>
   )
 }
