@@ -17,7 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/', label: "Vue d'ensemble", icon: IconLayoutDashboard },
   { href: '/accounts', label: 'Comptes', icon: IconUsers },
   { href: '/trips', label: 'Dossiers', icon: IconFolders },
-  { href: '/orphans', label: 'Orphelins', icon: IconTrashX, soon: true },
+  { href: '/orphans', label: 'Orphelins', icon: IconTrashX },
 ]
 
 export function NavLinks() {
